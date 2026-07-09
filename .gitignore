@@ -1,0 +1,3 @@
+scores_*.csv
+snapshots/
+.env
