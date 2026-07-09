@@ -1,3 +1,4 @@
-scores_*.csv
+cores_*.csv
 snapshots/
 .env
+

@@ -1,0 +1,40 @@
+name: Daily Notary snapshot
+
+on:
+  schedule:
+    - cron: "30 1 * * *"   # 01:30 UTC daily, shortly after PnW day change (00:00 UTC)
+  workflow_dispatch: {}     # manual trigger button for testing
+
+permissions:
+  contents: write           # lets the workflow commit results back
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Run scorer
+        env:
+          PNW_API_KEY: ${{ secrets.PNW_API_KEY }}
+        run: python3 notary_score.py
+
+      - name: Compress snapshot and scores
+        run: |
+          gzip -f snapshots/snapshot_*.json
+          gzip -f scores_*.csv
+
+      - name: Commit results
+        run: |
+          git config user.name "notary-bot"
+          git config user.email "notary@example.com"
+          git add -f snapshots/*.json.gz *.csv.gz
+          git commit -m "Daily snapshot $(date -u +%F)" || echo "Nothing to commit"
+          git push
